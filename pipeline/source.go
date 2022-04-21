@@ -235,3 +235,55 @@ func (src *Chan[T]) Fetch(n int) (fetched int) {
 func (src *Chan[T]) Data() T {
 	return src.data
 }
+
+// MultiChan is a source, that accepts and passes through
+// multiple elements from the input channel.
+type MultiChan[T any] struct {
+	channel <-chan T
+	ctx     context.Context
+	data    []T
+}
+
+// NewMultiChan returns a new MultiChan to read from
+// the given channel.
+func NewMultiChan[T any](channel <-chan T) *MultiChan[T] {
+	return &MultiChan[T]{
+		channel: channel,
+	}
+}
+
+// Err implements the method of the Source interface.
+func (src *MultiChan[T]) Err() error {
+	return nil
+}
+
+// Prepare implements the method of the Source interface.
+func (src *MultiChan[T]) Prepare(ctx context.Context) (size int) {
+	src.ctx = ctx
+	return -1
+}
+
+// Fetch implements the method of the Source interface.
+func (src *MultiChan[T]) Fetch(n int) (fetched int) {
+	src.data = nil
+	for fetched < n {
+		select {
+		case element, ok := <-src.channel:
+			if ok {
+				src.data = append(src.data, element)
+				fetched++
+			} else {
+				return
+			}
+		case <-src.ctx.Done():
+			src.data = nil
+			return 0
+		}
+	}
+	return
+}
+
+// Data implements the method of the Source interface.
+func (src *MultiChan[T]) Data() []T {
+	return src.data
+}
