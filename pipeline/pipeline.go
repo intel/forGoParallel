@@ -188,7 +188,7 @@ func (p *Pipeline[T]) Add(nodes ...Node[T]) {
 //
 // If user programs do not call NofBatches, or call them with a value < 1, then
 // the pipeline will choose a reasonable default value that takes
-// runtime.GOMAXPROCS(0) into account.
+// runtime.NumCPU() into account.
 //
 // If the expected total size for this pipeline's data source is unknown, or is
 // difficult to determine, use SetVariableBatchSize to influence batch sizes.
@@ -196,7 +196,7 @@ func (p *Pipeline[T]) NofBatches(n int) (nofBatches int) {
 	if n < 1 {
 		nofBatches = p.nofBatches
 		if nofBatches < 1 {
-			nofBatches = runtime.GOMAXPROCS(0)
+			nofBatches = runtime.NumCPU()
 			p.nofBatches = nofBatches
 		}
 	} else {
