@@ -6,20 +6,6 @@ import (
 	"sync/atomic"
 )
 
-// NewNode creates a node of the given kind, with the given filters.
-//
-// It is often more convenient to use one of the Ord, Seq, or Par methods.
-func NewNode[T any](kind NodeKind, filters ...Filter[T]) Node[T] {
-	switch kind {
-	case Ordered, Sequential:
-		return &seqnode[T]{kind: kind, filters: filters}
-	case Parallel:
-		return &parnode[T]{filters: filters}
-	default:
-		panic("Invalid NodeKind in pipeline.NewNode.")
-	}
-}
-
 // Identity is a filter that passes data batches through unmodified.
 // This filter will be optimized away in a pipeline, so it
 // does not hurt to add it.

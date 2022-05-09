@@ -144,18 +144,20 @@ func (src *BytesScanner) Data() [][]byte {
 // Func is a generic source that generates data batches
 // by repeatedly calling a function.
 type Func[T any] struct {
-	data  T
-	err   error
-	size  int
-	fetch func(size int) (data T, fetched int, err error)
+	data    T
+	err     error
+	prepare func(ctx context.Context) (size int)
+	fetch   func(size int) (data T, fetched int, err error)
 }
 
 // NewFunc returns a new Func to generate data batches
 // by repeatedly calling fetch.
 //
-// The size parameter informs the pipeline what the total
-// expected size of all data batches is. Pass -1 if the
-// total size is unknown or difficult to determine.
+// The prepare parameter is called when the pipeline
+// is started. It returns the total expected size of all
+// data batches. Return -1, or pass a nil function
+// to the prepare parameter, if the total size is unknown
+// or difficult to determine.
 //
 // The fetch function returns a data batch of the requested
 // size. It returns the size of the data batch that it was
@@ -164,8 +166,8 @@ type Func[T any] struct {
 // then make no further attempts to fetch more elements.
 //
 // The fetch function can also return an error if necessary.
-func NewFunc[T any](size int, fetch func(size int) (data T, fetched int, err error)) *Func[T] {
-	return &Func[T]{size: size, fetch: fetch}
+func NewFunc[T any](prepare func(ctx context.Context) (size int), fetch func(size int) (data T, fetched int, err error)) *Func[T] {
+	return &Func[T]{prepare: prepare, fetch: fetch}
 }
 
 // Err implements the method of the Source interface.
@@ -174,8 +176,13 @@ func (f *Func[T]) Err() error {
 }
 
 // Prepare implements the method of the Source interface.
-func (f *Func[T]) Prepare(_ context.Context) int {
-	return f.size
+func (f *Func[T]) Prepare(ctx context.Context) int {
+	if f.prepare == nil {
+		return -1
+	}
+	result := f.prepare(ctx)
+	f.prepare = nil
+	return result
 }
 
 // Fetch implements the method of the Source interface.

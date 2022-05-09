@@ -71,6 +71,10 @@ func (node *strictordnode[T]) Begin(p *Pipeline[T], index int, dataSize *int) (k
 	return
 }
 
+func (node *strictordnode[T]) StrictOrd() bool {
+	return true
+}
+
 // Implements the Feed method of the Node interface.
 func (node *strictordnode[T]) Feed(p *Pipeline[T], _ int, seqNo int, data T) {
 	node.cond.L.Lock()

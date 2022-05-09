@@ -80,6 +80,10 @@ type Node[T any] interface {
 	// by default.
 	Begin(p *Pipeline[T], index int, dataSize *int) (keep bool)
 
+	// StrictOrd reports whether this node or any contained nodes are StrictOrd
+	// nodes.
+	StrictOrd() bool
+
 	// Feed is called for each batch of data. The pipeline, the index of this
 	// node among all the nodes in the pipeline (which may be different from the
 	// index number seen by Begin), the sequence number of the batch (according
@@ -99,23 +103,34 @@ type Node[T any] interface {
 	End()
 }
 
+type pipelineState struct {
+	mutex          sync.RWMutex
+	err            error
+	ctx            context.Context
+	cancel         context.CancelFunc
+	nofBatches     int
+	batchInc       int
+	maxBatchSize   int
+	notifiers      []func()
+	runWithContext func(ctx context.Context, cancel context.CancelFunc)
+}
+
 // A Pipeline is a parallel pipeline that can feed batches of data fetched from
 // a source through several nodes that are ordered, sequential, or parallel.
-//
-// The zero Pipeline is valid and empty.
-//
-// A Pipeline must not be copied after first use.
 type Pipeline[T any] struct {
-	mutex        sync.RWMutex
-	err          error
-	ctx          context.Context
-	cancel       context.CancelFunc
-	source       Source[T]
-	nodes        []Node[T]
-	nofBatches   int
-	batchInc     int
-	maxBatchSize int
-	notifiers    []func()
+	*pipelineState
+	source Source[T]
+	nodes  []Node[T]
+}
+
+// New creates a new pipeline with the given source.
+func New[T any](source Source[T]) *Pipeline[T] {
+	result := &Pipeline[T]{
+		pipelineState: new(pipelineState),
+		source:        source,
+	}
+	result.runWithContext = result.defaultRunWithContext
+	return result
 }
 
 // Err returns the current error value for this pipeline, which may be nil if no
@@ -158,18 +173,6 @@ func (p *Pipeline[T]) Cancel() {
 	p.cancel()
 }
 
-// Source sets the data source for this pipeline.
-//
-// If source does not implement the Source interface, the pipeline uses
-// reflection to create a proper source for arrays, slices, strings, or
-// channels.
-//
-// It is safe to call Source multiple times before Run or RunWithContext is
-// called, in which case only the last call to Source is effective.
-func (p *Pipeline[T]) Source(source Source[T]) {
-	p.source = source
-}
-
 // Add appends nodes to the end of this pipeline.
 func (p *Pipeline[T]) Add(nodes ...Node[T]) {
 	for _, node := range nodes {
@@ -188,7 +191,7 @@ func (p *Pipeline[T]) Add(nodes ...Node[T]) {
 //
 // If user programs do not call NofBatches, or call them with a value < 1, then
 // the pipeline will choose a reasonable default value that takes
-// runtime.NumCPU() into account.
+// runtime.GOMAXPROCS(0) into account.
 //
 // If the expected total size for this pipeline's data source is unknown, or is
 // difficult to determine, use SetVariableBatchSize to influence batch sizes.
@@ -196,7 +199,7 @@ func (p *Pipeline[T]) NofBatches(n int) (nofBatches int) {
 	if n < 1 {
 		nofBatches = p.nofBatches
 		if nofBatches < 1 {
-			nofBatches = runtime.NumCPU()
+			nofBatches = runtime.GOMAXPROCS(0)
 			p.nofBatches = nofBatches
 		}
 	} else {
@@ -275,6 +278,10 @@ func (p *Pipeline[T]) Notify(f func()) {
 // data source and sends them to the nodes. Once the data source is depleted,
 // the nodes are informed that the end of the data source has been reached.
 func (p *Pipeline[T]) RunWithContext(ctx context.Context, cancel context.CancelFunc) {
+	p.runWithContext(ctx, cancel)
+}
+
+func (p *Pipeline[T]) defaultRunWithContext(ctx context.Context, cancel context.CancelFunc) {
 	if p.err != nil {
 		return
 	}
@@ -304,7 +311,7 @@ func (p *Pipeline[T]) RunWithContext(ctx context.Context, cancel context.CancelF
 			}
 		}
 		for index := len(p.nodes) - 1; index >= 0; index-- {
-			if _, ok := p.nodes[index].(*strictordnode[T]); ok {
+			if p.nodes[index].StrictOrd() {
 				for index = index - 1; index >= 0; index-- {
 					switch node := p.nodes[index].(type) {
 					case *seqnode[T]:

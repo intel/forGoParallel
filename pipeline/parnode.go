@@ -35,6 +35,10 @@ func (node *parnode[T]) Begin(p *Pipeline[T], _ int, dataSize *int) (keep bool) 
 	return
 }
 
+func (node *parnode[T]) StrictOrd() bool {
+	return false
+}
+
 // Implements the Feed method of the Node interface.
 func (node *parnode[T]) Feed(p *Pipeline[T], index int, seqNo int, data T) {
 	node.waitGroup.Add(1)

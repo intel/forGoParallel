@@ -7,11 +7,11 @@ import (
 )
 
 // ComputeNofBatches divides the size of the range (high - low) by a number
-// that takes runtime.NumCPU() into account.
+// that takes runtime.GOMAXPROCS(0) into account.
 func ComputeNofBatches(low, high int) (batches int) {
 	switch size := high - low; {
 	case size > 0:
-		batches = 2 * runtime.NumCPU()
+		batches = 2 * runtime.GOMAXPROCS(0)
 		if batches > size {
 			batches = size
 		}

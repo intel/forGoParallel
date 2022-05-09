@@ -112,6 +112,10 @@ func (node *seqnode[T]) Begin(p *Pipeline[T], index int, dataSize *int) (keep bo
 	return
 }
 
+func (node *seqnode[T]) StrictOrd() bool {
+	return false
+}
+
 // Implements the Feed method of the Node interface.
 func (node *seqnode[T]) Feed(p *Pipeline[T], _ int, seqNo int, data T) {
 	select {

@@ -15,8 +15,7 @@ func WordCount(r io.Reader) *gsync.Map[string, *int64] {
 	var result gsync.Map[string, *int64]
 	scanner := pipeline.NewScanner(r)
 	scanner.Split(bufio.ScanWords)
-	var p pipeline.Pipeline[[]string]
-	p.Source(scanner)
+	p := pipeline.New[[]string](scanner)
 	p.Add(
 		pipeline.Par(pipeline.Receive(
 			func(_ int, data []string) []string {
@@ -68,8 +67,7 @@ func Example_wordCount() {
 
 func WordCount2(text []string) *gsync.Map[string, *int64] {
 	var result gsync.Map[string, *int64]
-	var p pipeline.Pipeline[[]string]
-	p.Source(pipeline.NewSlice(text))
+	p := pipeline.New[[]string](pipeline.NewSlice(text))
 	p.Add(
 		pipeline.Par(pipeline.Receive(
 			func(_ int, data []string) []string {
