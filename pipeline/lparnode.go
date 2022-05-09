@@ -19,7 +19,7 @@ type lparnode[T any] struct {
 
 // LimitedPar creates a parallel node with the given filters.
 func LimitedPar[T any](filters ...Filter[T]) Node[T] {
-	return &lparnode[T]{limit: runtime.GOMAXPROCS(0), filters: filters}
+	return &lparnode[T]{limit: runtime.NumCPU(), filters: filters}
 }
 
 func (node *lparnode[T]) makeOrdered() {
