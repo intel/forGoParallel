@@ -6,12 +6,19 @@ import (
 	"runtime/debug"
 )
 
-// ComputeNofBatches divides the size of the range (high - low) by a number
-// that takes runtime.NumCPU() into account.
-func ComputeNofBatches(low, high int) (batches int) {
+// ComputeNofBatches divides the size of the range (high - low) by n. If n is 0,
+// a default is used that takes runtime.NumCPU() into account.
+func ComputeNofBatches(low, high, n int) (batches int) {
 	switch size := high - low; {
 	case size > 0:
-		batches = 2 * runtime.NumCPU()
+		switch {
+		case n == 0:
+			batches = 2 * runtime.NumCPU()
+		case n > 0:
+			batches = n
+		default:
+			panic(fmt.Sprintf("invalid number of batches: %v", n))
+		}
 		if batches > size {
 			batches = size
 		}

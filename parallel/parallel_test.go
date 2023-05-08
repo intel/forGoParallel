@@ -68,7 +68,7 @@ func ExampleDo() {
 func ExampleRangeReduceSum() {
 	numDivisors := func(n int) int {
 		return parallel.RangeReduceSum(
-			1, n+1,
+			1, n+1, 0,
 			func(low, high int) int {
 				var sum int
 				for i := low; i < high; i++ {
@@ -89,7 +89,7 @@ func ExampleRangeReduceSum() {
 
 func numDivisors(n int) int {
 	return parallel.RangeReduceSum(
-		1, n+1,
+		1, n+1, 0,
 		func(low, high int) int {
 			var sum int
 			for i := low; i < high; i++ {
@@ -105,7 +105,7 @@ func numDivisors(n int) int {
 func ExampleRangeReduce() {
 	findPrimes := func(n int) []int {
 		result := parallel.RangeReduce(
-			2, n,
+			2, n, 0,
 			func(low, high int) interface{} {
 				var slice []int
 				for i := low; i < high; i++ {

@@ -309,22 +309,25 @@ func Or(predicates ...func() bool) bool {
 	return b0 || b1
 }
 
-// Range receives a range and a range function f, divides the
+// Range receives a range, a batch count n, and a range function f, divides the
 // range into batches, and invokes the range function for each of these batches
 // in parallel, covering the half-open interval from low to high, including low
 // but excluding high.
 //
-// The range is specified by a low and high integer, with low <= high.
+// The range is specified by a low and high integer, with low <= high. The
+// batches are determined by dividing up the size of the range (high - low) by
+// n. If n is 0, a reasonable default is used that takes runtimes.NumCPU()
+// into account.
 //
 // The range function is invoked for each batch in its own goroutine, with 0 <=
 // low <= high, and Range returns only when all range functions have terminated.
 //
-// Range panics if high < low.
+// Range panics if high < low, or if n < 0.
 //
 // If one or more range function invocations panic, the corresponding goroutines
 // recover the panics, and Range eventually panics with the left-most recovered
 // panic value.
-func Range(low, high int, f func(low, high int)) {
+func Range(low, high, n int, f func(low, high int)) {
 	var recur func(int, int, int)
 	recur = func(low, high, n int) {
 		switch {
@@ -358,7 +361,7 @@ func Range(low, high int, f func(low, high int)) {
 			panic(fmt.Sprintf("invalid number of batches: %v", n))
 		}
 	}
-	recur(low, high, internal.ComputeNofBatches(low, high))
+	recur(low, high, internal.ComputeNofBatches(low, high, n))
 }
 
 // RangeAnd receives a range, a batch count n, and a range predicate function f,
@@ -366,18 +369,21 @@ func Range(low, high int, f func(low, high int)) {
 // these batches in parallel, covering the half-open interval from low to high,
 // including low but excluding high.
 //
-// The range is specified by a low and high integer, with low <= high.
+// The range is specified by a low and high integer, with low <= high. The
+// batches are determined by dividing up the size of the range (high - low) by
+// n. If n is 0, a reasonable default is used that takes runtime.NumCPU()
+// into account.
 //
 // The range predicate is invoked for each batch in its own goroutine, with 0 <=
 // low <= high, and RangeAnd returns only when all range predicates have
 // terminated, combining all return values with the && operator.
 //
-// RangeAnd panics if high < low.
+// RangeAnd panics if high < low, or if n < 0.
 //
 // If one or more range predicate invocations panic, the corresponding
 // goroutines recover the panics, and RangeAnd eventually panics with the
 // left-most recovered panic value.
-func RangeAnd(low, high int, f func(low, high int) bool) bool {
+func RangeAnd(low, high, n int, f func(low, high int) bool) bool {
 	var recur func(int, int, int) bool
 	recur = func(low, high, n int) bool {
 		switch {
@@ -411,7 +417,7 @@ func RangeAnd(low, high int, f func(low, high int) bool) bool {
 			panic(fmt.Sprintf("invalid number of batches: %v", n))
 		}
 	}
-	return recur(low, high, internal.ComputeNofBatches(low, high))
+	return recur(low, high, internal.ComputeNofBatches(low, high, n))
 }
 
 // RangeOr receives a range, a batch count n, and a range predicate function f,
@@ -419,18 +425,21 @@ func RangeAnd(low, high int, f func(low, high int) bool) bool {
 // these batches in parallel, covering the half-open interval from low to high,
 // including low but excluding high.
 //
-// The range is specified by a low and high integer, with low <= high.
+// The range is specified by a low and high integer, with low <= high. The
+// batches are determined by dividing up the size of the range (high - low) by
+// n. If n is 0, a reasonable default is used that takes runtime.NumCPU()
+// into account.
 //
 // The range predicate is invoked for each batch in its own goroutine, with 0 <=
 // low <= high, and RangeOr returns only when all range predicates have
 // terminated, combining all return values with the || operator.
 //
-// RangeOr panics if high < low.
+// RangeOr panics if high < low, or if n < 0.
 //
 // If one or more range predicate invocations panic, the corresponding
 // goroutines recover the panics, and RangeOr eventually panics with the
 // left-most recovered panic value.
-func RangeOr(low, high int, f func(low, high int) bool) bool {
+func RangeOr(low, high, n int, f func(low, high int) bool) bool {
 	var recur func(int, int, int) bool
 	recur = func(low, high, n int) bool {
 		switch {
@@ -464,28 +473,31 @@ func RangeOr(low, high int, f func(low, high int) bool) bool {
 			panic(fmt.Sprintf("invalid number of batches: %v", n))
 		}
 	}
-	return recur(low, high, internal.ComputeNofBatches(low, high))
+	return recur(low, high, internal.ComputeNofBatches(low, high, n))
 }
 
-// RangeReduce receives a range, a range reduce function, and a
+// RangeReduce receives a range, a batch count, a range reduce function, and a
 // join function, divides the range into batches, and invokes the range reducer
 // for each of these batches in parallel, covering the half-open interval from
 // low to high, including low but excluding high. The results of the range
 // reducer invocations are then combined by repeated invocations of join.
 //
-// The range is specified by a low and high integer, with low <= high.
+// The range is specified by a low and high integer, with low <= high. The
+// batches are determined by dividing up the size of the range (high - low) by
+// n. If n is 0, a reasonable default is used that takes runtime.NumCPU()
+// into account.
 //
 // The range reducer is invoked for each batch in its own goroutine, with 0 <=
 // low <= high, and RangeReduce returns only when all range reducers and pair
 // reducers have terminated.
 //
-// RangeReduce panics if high < low.
+// RangeReduce panics if high < low, or if n < 0.
 //
 // If one or more reducer invocations panic, the corresponding goroutines
 // recover the panics, and RangeReduce eventually panics with the left-most
 // recovered panic value.
 func RangeReduce[T any](
-	low, high int,
+	low, high, n int,
 	reduce func(low, high int) T,
 	join func(x, y T) T,
 ) T {
@@ -522,27 +534,30 @@ func RangeReduce[T any](
 			panic(fmt.Sprintf("invalid number of batches: %v", n))
 		}
 	}
-	return recur(low, high, internal.ComputeNofBatches(low, high))
+	return recur(low, high, internal.ComputeNofBatches(low, high, n))
 }
 
-// RangeReduceSum receives a range and a range reducer
+// RangeReduceSum receives a range, a batch count, and a range reducer
 // function, divides the range into batches, and invokes the range reducer for
 // each of these batches in parallel, covering the half-open interval from low
 // to high, including low but excluding high. The results of the range reducer
 // invocations are then added together.
 //
-// The range is specified by a low and high integer, with low <= high.
+// The range is specified by a low and high integer, with low <= high. The
+// batches are determined by dividing up the size of the range (high - low) by
+// n. If n is 0, a reasonable default is used that takes runtime.NumCPU()
+// into account.
 //
 // The range reducer is invoked for each batch in its own goroutine, with 0 <=
 // low <= high, and RangeReduceIntSum returns only when all range reducers and
 // pair reducers have terminated.
 //
-// RangeReduceIntSum panics if high < low.
+// RangeReduceIntSum panics if high < low, or if n < 0.
 //
 // If one or more reducer invocations panic, the corresponding goroutines
 // recover the panics, and RangeReduceIntSum eventually panics with the
 // left-most recovered panic value.
-func RangeReduceSum[T Addable](low, high int, reduce func(low, high int) T) T {
+func RangeReduceSum[T Addable](low, high, n int, reduce func(low, high int) T) T {
 	var recur func(int, int, int) T
 	recur = func(low, high, n int) T {
 		switch {
@@ -576,28 +591,31 @@ func RangeReduceSum[T Addable](low, high int, reduce func(low, high int) T) T {
 			panic(fmt.Sprintf("invalid number of batches: %v", n))
 		}
 	}
-	return recur(low, high, internal.ComputeNofBatches(low, high))
+	return recur(low, high, internal.ComputeNofBatches(low, high, n))
 }
 
-// RangeReduceProduct receives a range, and a range reducer
+// RangeReduceProduct receives a range, a batch count, and a range reducer
 // function, divides the range into batches, and invokes the range reducer for
 // each of these batches in parallel, covering the half-open interval from low
 // to high, including low but excluding high. The results of the range reducer
 // invocations are then multiplied with each other.
 //
-// The range is specified by a low and high integer, with low <= high.
+// The range is specified by a low and high integer, with low <= high. The
+// batches are determined by dividing up the size of the range (high - low) by
+// n. If n is 0, a reasonable default is used that takes runtime.NumCPU()
+// into account.
 //
 // The range reducer is invoked for each batch in its own goroutine, with 0 <=
 // low <= high, and RangeReduceIntProduct returns only when all range reducers
 // and pair reducers have terminated.
 //
-// RangeReduceIntProduct panics if high < low.
+// RangeReduceIntProduct panics if high < low, or if n < 0.
 //
 // If one or more reducer invocations panic, the corresponding goroutines
 // recover the panics, and RangeReduceIntProducet eventually panics with the
 // left-most recovered panic value.
 func RangeReduceProduct[T Multipliable](
-	low, high int,
+	low, high, n int,
 	reduce func(low, high int) T,
 ) T {
 	var recur func(int, int, int) T
@@ -633,7 +651,7 @@ func RangeReduceProduct[T Multipliable](
 			panic(fmt.Sprintf("invalid number of batches: %v", n))
 		}
 	}
-	return recur(low, high, internal.ComputeNofBatches(low, high))
+	return recur(low, high, internal.ComputeNofBatches(low, high, n))
 }
 
 func PrefixSum[T Addable](slice []T) []T {
@@ -641,13 +659,13 @@ func PrefixSum[T Addable](slice []T) []T {
 	for i, k := 0, int(math.Ceil(math.Log2(float64(len(slice))))); i < k; i++ {
 		l := int(math.Exp2(float64(i)))
 		Do(func() {
-			Range(0, l, func(low, high int) {
+			Range(0, l, 0, func(low, high int) {
 				for j := low; j < high; j++ {
 					result[j] = slice[j]
 				}
 			})
 		}, func() {
-			Range(l, len(slice), func(low, high int) {
+			Range(l, len(slice), 0, func(low, high int) {
 				for j := low; j < high; j++ {
 					result[j] = slice[j-l] + slice[j]
 				}
