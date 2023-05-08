@@ -37,7 +37,7 @@ func (node *strictordnode[T]) TryMerge(next Node[T]) bool {
 	}
 }
 
-//Implements the Begin method of the Node interface.
+// Implements the Begin method of the Node interface.
 func (node *strictordnode[T]) Begin(p *Pipeline[T], index int, dataSize *int) (keep bool) {
 	node.receivers, node.finalizers = ComposeFilters(p, Ordered, dataSize, node.filters)
 	node.filters = nil
