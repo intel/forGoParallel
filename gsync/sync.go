@@ -3,31 +3,7 @@ package gsync
 import (
 	"sync"
 	"sync/atomic"
-	"unsafe"
 )
-
-// AtomicPointer enables type-safe atomic operations on pointer values.
-type AtomicPointer[T any] struct{ ptr unsafe.Pointer }
-
-func MakeAtomicPointer[T any](value *T) AtomicPointer[T] {
-	return AtomicPointer[T]{unsafe.Pointer(value)}
-}
-
-func (ptr *AtomicPointer[T]) CompareAndSwap(old, new *T) (swapped bool) {
-	return atomic.CompareAndSwapPointer(&ptr.ptr, unsafe.Pointer(old), unsafe.Pointer(new))
-}
-
-func (ptr *AtomicPointer[T]) Load() *T {
-	return (*T)(atomic.LoadPointer(&ptr.ptr))
-}
-
-func (ptr *AtomicPointer[T]) Store(value *T) {
-	atomic.StorePointer(&ptr.ptr, unsafe.Pointer(value))
-}
-
-func (ptr *AtomicPointer[T]) Swap(new *T) (old *T) {
-	return (*T)(atomic.SwapPointer(&ptr.ptr, unsafe.Pointer(new)))
-}
 
 // Map is a type-safe version of sync.Map.
 type Map[K comparable, V any] sync.Map
@@ -70,7 +46,7 @@ func (m *Map[K, V]) Store(key K, value V) {
 // Pool is a type-safe version of sync.Pool.
 type Pool[T any] struct {
 	New      func() *T
-	syncPool AtomicPointer[sync.Pool]
+	syncPool atomic.Pointer[sync.Pool]
 }
 
 func (p *Pool[T]) getSyncPool() *sync.Pool {
