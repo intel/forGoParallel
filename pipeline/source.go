@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"context"
 	"io"
+	"slices"
 )
 
 // A Source represents an object that can generate data batches for pipelines.
@@ -127,7 +128,7 @@ func (src *BytesScanner) Fetch(n int) (fetched int) {
 	var data [][]byte
 	for fetched = 0; fetched < n; fetched++ {
 		if src.Scan() {
-			data = append(data, append([]byte(nil), src.Bytes()...))
+			data = append(data, slices.Clone(src.Bytes()))
 		} else {
 			break
 		}

@@ -41,6 +41,7 @@ package pipeline
 import (
 	"context"
 	"runtime"
+	"slices"
 	"sync"
 )
 
@@ -296,7 +297,7 @@ func (p *Pipeline[T]) defaultRunWithContext(ctx context.Context, cancel context.
 		if p.nodes[index].Begin(p, index, &filteredSize) {
 			index++
 		} else {
-			p.nodes = append(p.nodes[:index], p.nodes[index+1:]...)
+			p.nodes = slices.Delete(p.nodes, index, index+1)
 		}
 	}
 	if p.err != nil {
@@ -305,7 +306,7 @@ func (p *Pipeline[T]) defaultRunWithContext(ctx context.Context, cancel context.
 	if len(p.nodes) > 0 {
 		for index := 0; index < len(p.nodes)-1; {
 			if p.nodes[index].TryMerge(p.nodes[index+1]) {
-				p.nodes = append(p.nodes[:index+1], p.nodes[index+2:]...)
+				p.nodes = slices.Delete(p.nodes, index+1, index+2)
 			} else {
 				index++
 			}

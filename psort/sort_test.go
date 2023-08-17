@@ -3,6 +3,7 @@ package psort
 import (
 	"bytes"
 	"math/rand"
+	"slices"
 	"sort"
 	"testing"
 )
@@ -74,10 +75,8 @@ func makeRandomSlice(size, limit int) []int {
 
 func TestSort(t *testing.T) {
 	orgSlice := makeRandomSlice(100*0x6000, 100*100*0x6000)
-	s1 := make([]int, len(orgSlice))
-	s2 := make([]int, len(orgSlice))
-	copy(s1, orgSlice)
-	copy(s2, orgSlice)
+	s1 := slices.Clone(orgSlice)
+	s2 := slices.Clone(orgSlice)
 
 	t.Run("ParallelStableSort", func(t *testing.T) {
 		By(func(i, j int) bool { return i < j }).ParallelStableSort(s1)
@@ -96,10 +95,8 @@ func TestSort(t *testing.T) {
 
 func TestIntSort(t *testing.T) {
 	orgSlice := makeRandomSlice(100*0x6000, 100*100*0x6000)
-	s1 := make([]int, len(orgSlice))
-	s2 := make([]int, len(orgSlice))
-	copy(s1, orgSlice)
-	copy(s2, orgSlice)
+	s1 := slices.Clone(orgSlice)
+	s2 := slices.Clone(orgSlice)
 
 	t.Run("ParallelStableSort IntSlice", func(t *testing.T) {
 		StableSort(IntSlice(s1))
@@ -132,10 +129,8 @@ func makeRandomFloat64Slice(size int) []float64 {
 
 func TestFloat64Sort(t *testing.T) {
 	orgSlice := makeRandomFloat64Slice(100 * 0x6000)
-	s1 := make([]float64, len(orgSlice))
-	s2 := make([]float64, len(orgSlice))
-	copy(s1, orgSlice)
-	copy(s2, orgSlice)
+	s1 := slices.Clone(orgSlice)
+	s2 := slices.Clone(orgSlice)
 
 	t.Run("ParallelStableSort Float64Slice", func(t *testing.T) {
 		StableSort(Float64Slice(s1))
@@ -173,10 +168,8 @@ func makeRandomStringSlice(size, lenlimit int, limit int32) []string {
 
 func TestStringSort(t *testing.T) {
 	orgSlice := makeRandomStringSlice(100*0x6000, 256, 16384)
-	s1 := make([]string, len(orgSlice))
-	s2 := make([]string, len(orgSlice))
-	copy(s1, orgSlice)
-	copy(s2, orgSlice)
+	s1 := slices.Clone(orgSlice)
+	s2 := slices.Clone(orgSlice)
 
 	t.Run("ParallelStableSort StringSlice", func(t *testing.T) {
 		StableSort(StringSlice(s1))
@@ -259,8 +252,7 @@ func checkStable(b boxSlice) bool {
 
 func TestStableSort(t *testing.T) {
 	orgSlice := makeRandomBoxSlice(100 * 0x6000)
-	s1 := make(boxSlice, len(orgSlice))
-	copy(s1, orgSlice)
+	s1 := slices.Clone(orgSlice)
 
 	t.Run("ParallelStableSort boxSlice", func(t *testing.T) {
 		StableSort(s1)

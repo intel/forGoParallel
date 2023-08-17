@@ -1,5 +1,7 @@
 package pipeline
 
+import "slices"
+
 type transformNode[S, T any] struct {
 	next      *Pipeline[T]
 	transform func(seqNo int, data S) T
@@ -100,7 +102,7 @@ func (node *transformNode[S, T]) Begin(_ *Pipeline[S], _ int, dataSize *int) (ke
 		if node.next.nodes[index].Begin(node.next, index, dataSize) {
 			index++
 		} else {
-			node.next.nodes = append(node.next.nodes[:index], node.next.nodes[index+1:]...)
+			node.next.nodes = slices.Delete(node.next.nodes, index, index+1)
 		}
 	}
 	if node.next.err != nil {
@@ -111,7 +113,7 @@ func (node *transformNode[S, T]) Begin(_ *Pipeline[S], _ int, dataSize *int) (ke
 	}
 	for index := 0; index < len(node.next.nodes)-1; {
 		if node.next.nodes[index].TryMerge(node.next.nodes[index+1]) {
-			node.next.nodes = append(node.next.nodes[:index+1], node.next.nodes[index+2:]...)
+			node.next.nodes = slices.Delete(node.next.nodes, index+1, index+2)
 		} else {
 			index++
 		}
