@@ -90,7 +90,7 @@ jobs:
         template: report
         token: ${{ secrets.SECURITY_TOKEN }}
     - name: GitHub Upload Release Artifacts
-      uses: actions/upload-artifacts@v2
+      uses: actions/upload-artifact@v2
       with:
         name: report
         path: |
