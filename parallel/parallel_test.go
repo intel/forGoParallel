@@ -129,13 +129,13 @@ func ExampleRangeReduce() {
 }
 
 func TestPrefix(t *testing.T) {
-	for i := 0; i < 99; i++ {
+	for i := range 99 {
 		slice := make([]int, i)
-		for j := 0; j < i; j++ {
+		for j := range i {
 			slice[j] = 1
 		}
 		slice = parallel.PrefixSum(slice)
-		for j := 0; j < i; j++ {
+		for j := range i {
 			if slice[j] != j+1 {
 				t.Fail()
 			}

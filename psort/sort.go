@@ -28,8 +28,8 @@ func IsSorted(data sort.Interface) bool {
 	if size < qsortGrainSize {
 		return sort.IsSorted(data)
 	}
-	for i := 1; i < serialCutoff; i++ {
-		if data.Less(i, i-1) {
+	for i := range serialCutoff - 1 {
+		if data.Less(i+1, i) {
 			return false
 		}
 	}
@@ -38,11 +38,12 @@ func IsSorted(data sort.Interface) bool {
 	var pTest func(int, int) bool
 	pTest = func(index, size int) bool {
 		if size < qsortGrainSize {
-			for i := index; i < index+size; i++ {
-				if ((i % 1024) == 0) && (atomic.LoadInt32(&done) != 0) {
+			for i := range size {
+				j := i + index
+				if ((j % 1024) == 0) && (atomic.LoadInt32(&done) != 0) {
 					return false
 				}
-				if data.Less(i, i-1) {
+				if data.Less(j, j-1) {
 					return false
 				}
 			}

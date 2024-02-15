@@ -656,7 +656,7 @@ func RangeReduceProduct[T Multipliable](
 
 func PrefixSum[T Addable](slice []T) []T {
 	result := make([]T, len(slice))
-	for i, k := 0, int(math.Ceil(math.Log2(float64(len(slice))))); i < k; i++ {
+	for i := range int(math.Ceil(math.Log2(float64(len(slice))))) {
 		l := int(math.Exp2(float64(i)))
 		Do(func() {
 			Range(0, l, 0, func(low, high int) {

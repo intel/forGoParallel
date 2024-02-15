@@ -36,7 +36,7 @@ func (s IntSliceSorter) Swap(i, j int) {
 func (s IntSliceSorter) Assign(t StableSorter) func(i, j, len int) {
 	dst, src := s.slice, t.(IntSliceSorter).slice
 	return func(i, j, len int) {
-		for k := 0; k < len; k++ {
+		for k := range len {
 			dst[i+k] = src[j+k]
 		}
 	}
@@ -67,7 +67,7 @@ func (by By) IsSorted(slice []int) bool {
 
 func makeRandomSlice(size, limit int) []int {
 	result := make([]int, size)
-	for i := 0; i < size; i++ {
+	for i := range size {
 		result[i] = rand.Intn(limit)
 	}
 	return result
@@ -121,7 +121,7 @@ func TestIntSort(t *testing.T) {
 
 func makeRandomFloat64Slice(size int) []float64 {
 	result := make([]float64, size)
-	for i := 0; i < size; i++ {
+	for i := range size {
 		result[i] = rand.NormFloat64()
 	}
 	return result
@@ -155,10 +155,9 @@ func TestFloat64Sort(t *testing.T) {
 
 func makeRandomStringSlice(size, lenlimit int, limit int32) []string {
 	result := make([]string, size)
-	for i := 0; i < size; i++ {
+	for i := range size {
 		var buf bytes.Buffer
-		len := rand.Intn(lenlimit)
-		for j := 0; j < len; j++ {
+		for range rand.Intn(lenlimit) {
 			buf.WriteRune(rand.Int31n(limit))
 		}
 		result[i] = buf.String()
@@ -203,7 +202,7 @@ type (
 func makeRandomBoxSlice(size int) boxSlice {
 	result := make([]box, size)
 	half := ((size - 1) / 2) + 1
-	for i := 0; i < size; i++ {
+	for i := range size {
 		result[i].primary = rand.Intn(half)
 		result[i].secondary = i + 1
 	}
@@ -225,7 +224,7 @@ func (s boxSlice) Less(i, j int) bool {
 func (s boxSlice) Assign(source StableSorter) func(i, j, len int) {
 	dst, src := s, source.(boxSlice)
 	return func(i, j, len int) {
-		for k := 0; k < len; k++ {
+		for k := range len {
 			dst[i+k] = src[j+k]
 		}
 	}
@@ -277,7 +276,7 @@ func BenchmarkSort(b *testing.B) {
 	s3 := make([]int, len(orgSlice))
 
 	b.Run("SequentialSort", func(b *testing.B) {
-		for i := 0; i < b.N; i++ {
+		for range b.N {
 			b.StopTimer()
 			copy(s1, orgSlice)
 			b.StartTimer()
@@ -286,7 +285,7 @@ func BenchmarkSort(b *testing.B) {
 	})
 
 	b.Run("ParallelStableSort", func(b *testing.B) {
-		for i := 0; i < b.N; i++ {
+		for range b.N {
 			b.StopTimer()
 			copy(s2, orgSlice)
 			b.StartTimer()
@@ -295,7 +294,7 @@ func BenchmarkSort(b *testing.B) {
 	})
 
 	b.Run("ParallelSort", func(b *testing.B) {
-		for i := 0; i < b.N; i++ {
+		for range b.N {
 			b.StopTimer()
 			copy(s3, orgSlice)
 			b.StartTimer()

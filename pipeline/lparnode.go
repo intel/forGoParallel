@@ -45,7 +45,7 @@ func (node *lparnode[T]) Begin(p *Pipeline[T], index int, dataSize *int) (keep b
 	if keep = (len(node.receivers) > 0) || (len(node.finalizers) > 0); keep {
 		node.channel = make(chan dataBatch[T])
 		node.waitGroup.Add(node.limit)
-		for i := 0; i < node.limit; i++ {
+		for range node.limit {
 			go func() {
 				defer node.waitGroup.Done()
 				for {

@@ -89,7 +89,7 @@ func (src *Scanner) Prepare(_ context.Context) (size int) {
 // Fetch implements the method of the Source interface.
 func (src *Scanner) Fetch(n int) (fetched int) {
 	var data []string
-	for fetched = 0; fetched < n; fetched++ {
+	for fetched = range n {
 		if src.Scan() {
 			data = append(data, src.Text())
 		} else {
@@ -126,7 +126,7 @@ func (src *BytesScanner) Prepare(_ context.Context) (size int) {
 // Fetch implements the method of the Source interface.
 func (src *BytesScanner) Fetch(n int) (fetched int) {
 	var data [][]byte
-	for fetched = 0; fetched < n; fetched++ {
+	for fetched = range n {
 		if src.Scan() {
 			data = append(data, slices.Clone(src.Bytes()))
 		} else {
